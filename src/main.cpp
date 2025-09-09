@@ -109,7 +109,7 @@ void loop() {
 }
 
 
-//Disegno della bitmap piu testo nella parte bassa del display
+// Disegno della bitmap piu testo nella parte bassa del display
 void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message) 
 {
   display.clearDisplay();
