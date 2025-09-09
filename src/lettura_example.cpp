@@ -1,55 +1,96 @@
 #ifdef TEST
-#define S2_PIN  4
-#define S3_PIN  5
-#define OUT_PIN 6
+#define S0 4  //D4
+#define S1 5  //D5
+#define S2 6  //D6
+#define S3 7  //D7
+#define OUT 8 //D8
+
+// Valori da calibrare con superfici di riferimento bianca (MAX) e nera (MIN)
+int redMin = 0/* INSERISCI IL TUO VALORE */;      
+int redMax = 0/* INSERISCI IL TUO VALORE */;
+int greenMin = 0/* INSERISCI IL TUO VALORE */;
+int greenMax = 0/* INSERISCI IL TUO VALORE */;
+int blueMin = 0/* INSERISCI IL TUO VALORE */;
+int blueMax = 0/* INSERISCI IL TUO VALORE */;
 
 void setup() {
-  pinMode(S2_PIN, OUTPUT);
-  pinMode(S3_PIN, OUTPUT);
-  pinMode(OUT_PIN, INPUT);
+  pinMode(S0, OUTPUT);
+  pinMode(S1, OUTPUT);
+  pinMode(S2, OUTPUT);
+  pinMode(S3, OUTPUT);
+  pinMode(OUT, INPUT);
+  digitalWrite(S0, HIGH);
+  digitalWrite(S1, LOW);
   Serial.begin(9600);
 }
+void normalLoop();
+void calibrationLoop();
 
-// Funzione generica per leggere la frequenza del colore selezionato
-unsigned int readColor() {
-  // Leggevo pulse width in uscita: minore è il periodo, maggiore la concentrazione di quel colore
-  // On alcuni sensori, meglio pulseIn(OUT_PIN, LOW)
-  unsigned int t = pulseIn(OUT_PIN, LOW);
-  return t == 0 ? 1 : t; // evitare divisione per zero dopo
+void Loop() {
+  calibrationLoop();
 }
 
-void readRGB(uint8_t *red, uint8_t *green, uint8_t *blue) {
-  // Rosso: S2 LOW, S3 LOW
-  digitalWrite(S2_PIN, LOW);
-  digitalWrite(S3_PIN, LOW);
-  delay(2);
-  unsigned int r = readColor();
+void normalLoop() {
+  // Rosso
+  digitalWrite(S2, LOW);
+  digitalWrite(S3, LOW);
+  int redRaw = pulseIn(OUT, LOW);
 
-  // Verde: S2 HIGH, S3 HIGH
-  digitalWrite(S2_PIN, HIGH);
-  digitalWrite(S3_PIN, HIGH);
-  delay(2);
-  unsigned int g = readColor();
+  // Verde
+  digitalWrite(S2, HIGH);
+  digitalWrite(S3, HIGH);
+  int greenRaw = pulseIn(OUT, LOW);
 
-  // Blu: S2 LOW, S3 HIGH
-  digitalWrite(S2_PIN, LOW);
-  digitalWrite(S3_PIN, HIGH);
-  delay(2);
-  unsigned int b = readColor();
+  // Blu
+  digitalWrite(S2, LOW);
+  digitalWrite(S3, HIGH);
+  int blueRaw = pulseIn(OUT, LOW);
 
-  // Converto in "componente luminosa": minore pulseIn = maggiore colore, inverti
-  unsigned int maxValue = max(r, max(g, b));
-  *red   = map(maxValue - r, 0, maxValue, 0, 255);
-  *green = map(maxValue - g, 0, maxValue, 0, 255);
-  *blue  = map(maxValue - b, 0, maxValue, 0, 255);
-}
+  // Conversione da raw a scala 0-255 (mappando l’intervallo tra i tuoi minimi e massimi)
+  int red = map(redRaw, redMin, redMax, 255, 0);
+  int green = map(greenRaw, greenMin, greenMax, 255, 0);
+  int blue = map(blueRaw, blueMin, blueMax, 255, 0);
 
-void loop() {
-  uint8_t r, g, b;
-  readRGB(&r, &g, &b);
-  Serial.print("R: "); Serial.print(r);
-  Serial.print(" G: "); Serial.print(g);
-  Serial.print(" B: "); Serial.println(b);
+  // Limita i valori tra 0 e 255
+  red = constrain(red, 0, 255);
+  green = constrain(green, 0, 255);
+  blue = constrain(blue, 0, 255);
+
+  Serial.print("RGB: ");
+  Serial.print(red);
+  Serial.print(", ");
+  Serial.print(green);
+  Serial.print(", ");
+  Serial.println(blue);
+
   delay(500);
 }
+
+void calibrationLoop() {
+  // Rosso
+  digitalWrite(S2, LOW);
+  digitalWrite(S3, LOW);
+  int red = pulseIn(OUT, LOW);
+
+  // Verde
+  digitalWrite(S2, HIGH);
+  digitalWrite(S3, HIGH);
+  int green = pulseIn(OUT, LOW);
+
+  // Blu
+  digitalWrite(S2, LOW);
+  digitalWrite(S3, HIGH);
+  int blue = pulseIn(OUT, LOW);
+
+  Serial.print("Red: ");
+  Serial.print(red);
+  Serial.print("  Green: ");
+  Serial.print(green);
+  Serial.print("  Blue: ");
+  Serial.println(blue);
+
+  delay(500);
+}
+
+
 #endif
