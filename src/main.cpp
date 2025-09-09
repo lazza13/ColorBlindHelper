@@ -40,15 +40,15 @@ const RGBColor color_reference[] = {
   {135, 206, 250}     // AZZURRO (azzurro cielo)
 };
 
-//Definizione delle funzioni
+// Definizione delle funzioni
 void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message);
 ColorClass bestMatchRGB(uint8_t r, uint8_t g, uint8_t b);
 
 // Creo istanza del display
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT);
 
+// Setup dell'arduino NANO e inizializzazione del display
 void setup() {
-
   //Inizializzazione display
   if (!display.begin( SSD1306_SWITCHCAPVCC, 0x3C)) {
     while (true); //rimango fermo se non lo trovo 
@@ -59,42 +59,46 @@ void setup() {
   display.display();
 }
 
+// Loop di esecuzione
 void loop() {
 
+  //Leggo il colore dal sensore
+
+  //Decido il colore piu vicino e lo stampo a schermo 
   ColorClass col = bestMatchRGB(101, 67, 33);
   switch(col) {
     case COL_NERO: 
-      drawBitmapWithText(nullptr,40,40, "NERO");
+      drawBitmapWithText(epd_bitmap_formica,40,40, "NERO");
       break;
     case COL_BIANCO:
-      drawBitmapWithText(nullptr,40,40, "BIANCO");
+      drawBitmapWithText(epd_bitmap_nuvola,40,40, "BIANCO");
       break;
     case COL_GRIGIO:
-      drawBitmapWithText(nullptr,40,40, "GRIGIO");
+      drawBitmapWithText(epd_bitmap_spada,40,40, "GRIGIO");
       break;
     case COL_ROSSO:    // ...
       drawBitmapWithText(epd_bitmap_cuore,40,40, "ROSSO");
       break;
     case COL_GIALLO:
-      drawBitmapWithText(epd_bitmap_sole, 40, 40, "GIALLO");
+      drawBitmapWithText(epd_bitmap_sun, 40, 40, "GIALLO");
       break;
     case COL_BLU:
-      drawBitmapWithText(nullptr,40,40, "BLU");
+      drawBitmapWithText(epd_bitmap_onde,40,40, "BLU");
       break;
     case COL_MARRONE:
       drawBitmapWithText(epd_bitmap_marrone, 40, 40, "MARRONE");
       break;
     case COL_ARANCIONE:
-      drawBitmapWithText(nullptr,40,40, "ARANCIONE");
+      drawBitmapWithText(epd_bitmap_arancia,40,40, "ARANCIONE");
       break;
     case COL_VIOLA:
-      drawBitmapWithText(nullptr,40,40, "VIOLA");
+      drawBitmapWithText(epd_bitmap_principessa,40,40, "VIOLA");
       break;
     case COL_ROSA:
       drawBitmapWithText(epd_bitmap_rosa, 40, 40, "ROSA");
       break;
     case COL_AZZURRO:
-      drawBitmapWithText(nullptr,40,40, "AZZURRO");
+      drawBitmapWithText(epd_bitmap_maglietta,40,40, "AZZURRO");
       break;
     case COL_VERDE:
       drawBitmapWithText(epd_bitmap_foglia, 40, 40, "VERDE");
@@ -102,12 +106,10 @@ void loop() {
     default:
       drawBitmapWithText(epd_bitmap_marrone, 40, 40, "MARRONE");
   }
-  
-  return; //non voglio che sia un loop ma deve fare le cose solo una volta
 }
 
 
-//Disegno della bitmap piu testo
+//Disegno della bitmap piu testo nella parte bassa del display
 void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message) 
 {
   display.clearDisplay();
@@ -138,7 +140,8 @@ void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_heig
   display.display();
 }
 
-// calcoliamo il coore come la distanza minima (tralasciando la radice quadrata che non cambia ai fini del trovare il piu vicino)
+// Calcoliamo il colore come la distanza minima in 3 dimensioni 
+// (tralasciando la radice quadrata che non cambia ai fini del trovare il piu vicino)
 ColorClass bestMatchRGB(uint8_t r, uint8_t g, uint8_t b) 
 {
   uint32_t minDist = 0xFFFFFFFF;
