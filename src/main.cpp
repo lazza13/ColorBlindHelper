@@ -2,6 +2,15 @@
 #include <Adafruit_SSD1306.h>
 #include "bitmap.h"
 
+//#define ENABLE_SENSOR
+//#define CALIBRATION_MODE
+
+// PIN per la gestione del sensore TCS3200
+#define S0 4  //D4
+#define S1 5  //D5
+#define S2 6  //D6
+#define S3 7  //D7
+#define OUT 8 //D8
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -40,15 +49,37 @@ const RGBColor color_reference[] = {
   {135, 206, 250}     // AZZURRO (azzurro cielo)
 };
 
+
+// Valori da calibrare con superfici di riferimento bianca (MAX) e nera (MIN)
+int redMin = 0;   
+int redMax = 0;
+int greenMin = 0;
+int greenMax = 0;
+int blueMin = 0;
+int blueMax = 0;
+
 // Definizione delle funzioni
 void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message);
-ColorClass bestMatchRGB(uint8_t r, uint8_t g, uint8_t b);
+ColorClass bestMatchRGB(RGBColor currentColor);
+void rawSesnsorRead();
+RGBColor rgbSensorRead();
 
 // Creo istanza del display
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT);
 
 // Setup dell'arduino NANO e inizializzazione del display
 void setup() {
+
+#ifdef ENABLE_SENSOR
+  pinMode(S0, OUTPUT);
+  pinMode(S1, OUTPUT);
+  pinMode(S2, OUTPUT);
+  pinMode(S3, OUTPUT);
+  pinMode(OUT, INPUT);
+  digitalWrite(S0, HIGH);
+  digitalWrite(S1, LOW);
+#endif
+
   //Inizializzazione display
   if (!display.begin( SSD1306_SWITCHCAPVCC, 0x3C)) {
     while (true); //rimango fermo se non lo trovo 
@@ -57,15 +88,29 @@ void setup() {
   display.clearDisplay();
   // Disegno del display
   display.display();
+
+  Serial.begin(9600);
 }
 
 // Loop di esecuzione
-void loop() {
-
+void loop() 
+{
+  RGBColor curretColor;
+#ifdef ENABLE_SENSOR
   //Leggo il colore dal sensore
-
+  #ifdef CALIBRATION_MODE
+    rawSesnsorRead(); //lettura dei dati di calibrazione necessaria solo la prima volta
+    return; //// ritorno per riavviare nuovamente le letture e non finire nel while di stop
+  #else
+    curretColor = rgbSensorRead();
+  #endif
+#else
+  curretColor.r = 101;
+  curretColor.g = 67;
+  curretColor.b = 33;
+#endif
   //Decido il colore piu vicino e lo stampo a schermo 
-  ColorClass col = bestMatchRGB(101, 67, 33);
+  ColorClass col = bestMatchRGB(curretColor);
   switch(col) {
     case COL_NERO: 
       drawBitmapWithText(epd_bitmap_formica,40,40, "NERO");
@@ -76,7 +121,7 @@ void loop() {
     case COL_GRIGIO:
       drawBitmapWithText(epd_bitmap_spada,40,40, "GRIGIO");
       break;
-    case COL_ROSSO:    // ...
+    case COL_ROSSO:
       drawBitmapWithText(epd_bitmap_cuore,40,40, "ROSSO");
       break;
     case COL_GIALLO:
@@ -106,6 +151,8 @@ void loop() {
     default:
       drawBitmapWithText(epd_bitmap_marrone, 40, 40, "MARRONE");
   }
+
+  while(true); //leggo solo una volta cosi per leggere bisogna premere nuovamente il pulsante di accensione
 }
 
 
@@ -142,14 +189,14 @@ void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_heig
 
 // Calcoliamo il colore come la distanza minima in 3 dimensioni 
 // (tralasciando la radice quadrata che non cambia ai fini del trovare il piu vicino)
-ColorClass bestMatchRGB(uint8_t r, uint8_t g, uint8_t b) 
+ColorClass bestMatchRGB(RGBColor currentColor) 
 {
   uint32_t minDist = 0xFFFFFFFF;
   ColorClass best = COL_NERO;
   for (int i = 0; i < sizeof(color_reference)/sizeof(color_reference[0]); i++) {
-    int dr = (int)r - color_reference[i].r;
-    int dg = (int)g - color_reference[i].g;
-    int db = (int)b - color_reference[i].b;
+    int dr = (int)currentColor.r - color_reference[i].r;
+    int dg = (int)currentColor.g - color_reference[i].g;
+    int db = (int)currentColor.b - color_reference[i].b;
     uint32_t dist = dr*dr + dg*dg + db*db;
     if (dist < minDist) {
       minDist = dist;
@@ -157,4 +204,70 @@ ColorClass bestMatchRGB(uint8_t r, uint8_t g, uint8_t b)
     }
   }
   return best;
+}
+
+//Funzione per la lettura RAW del sensore in modo da ottenere i dati di calibrazione
+//per la lettura esatta del sensore
+RGBColor rgbSensorRead() 
+{
+  RGBColor colorData;
+  // Rosso
+  digitalWrite(S2, LOW);
+  digitalWrite(S3, LOW);
+  int redRaw = pulseIn(OUT, LOW);
+
+  // Verde
+  digitalWrite(S2, HIGH);
+  digitalWrite(S3, HIGH);
+  int greenRaw = pulseIn(OUT, LOW);
+
+  // Blu
+  digitalWrite(S2, LOW);
+  digitalWrite(S3, HIGH);
+  int blueRaw = pulseIn(OUT, LOW);
+
+  // Conversione da raw a scala 0-255 (mappando l’intervallo tra i tuoi minimi e massimi)
+  int red = map(redRaw, redMin, redMax, 255, 0);
+  int green = map(greenRaw, greenMin, greenMax, 255, 0);
+  int blue = map(blueRaw, blueMin, blueMax, 255, 0);
+
+  // Limita i valori tra 0 e 255
+  colorData.r = constrain(red, 0, 255);
+  colorData.g = constrain(green, 0, 255);
+  colorData.b = constrain(blue, 0, 255);
+
+  return colorData;
+}
+
+// Funzione per la lettura del colore in formato RGB con dati di calibrazione
+void rawSesnsorRead() 
+{
+  // Rosso
+  digitalWrite(S2, LOW);
+  digitalWrite(S3, LOW);
+  int red = pulseIn(OUT, LOW);
+
+  // Verde
+  digitalWrite(S2, HIGH);
+  digitalWrite(S3, HIGH);
+  int green = pulseIn(OUT, LOW);
+
+  // Blu
+  digitalWrite(S2, LOW);
+  digitalWrite(S3, HIGH);
+  int blue = pulseIn(OUT, LOW);
+
+   
+  char buffer[200];
+  sprintf(buffer,"r: %d, g: %d, b: %d",red,green,blue);
+  drawBitmapWithText(nullptr,0,0,buffer);
+  
+  Serial.print("Red: ");
+  Serial.print(red);
+  Serial.print("  Green: ");
+  Serial.print(green);
+  Serial.print("  Blue: ");
+  Serial.println(blue);
+
+  delay(500);
 }
