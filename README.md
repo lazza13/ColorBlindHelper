@@ -4,13 +4,13 @@ Color Blind Helper è un dispositivo elettronico creato per aiutare le persone d
 
 ## Descrizione
 
-Il progetto, realizzato con una board Arduino (NANO) e un sensore di colore (ad esempio TCS3200), rileva e mostra il nome del colore riconosciuto tramite display OLED I2C. Non sono previsti feedback audio, né altri tipi di output oltre all'OLED (ma potrebbero essere inseriti in futuro).
+Il progetto, realizzato con una board Arduino (NANO) e un sensore di colore (ad esempio TCS3200 o TCS34725), rileva e mostra il nome del colore riconosciuto tramite display OLED I2C. Non sono previsti feedback audio, né altri tipi di output oltre all'OLED (ma potrebbero essere inseriti in futuro).
 
 ## Requisiti
 
 ### Hardware
 - Arduino (Nano ma anche altri arduino a scelta)
-- Sensore di colore (es. TCS3200)
+- Sensore di colore (es. TCS3200, TCS34725)
 - Display OLED I2C (es. SSD1306 da 0,96'')
 - Cavi jumper e breadboard secondo necessità
 

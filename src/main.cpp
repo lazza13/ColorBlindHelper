@@ -1,9 +1,21 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <Adafruit_TCS34725.h>
 #include "bitmap.h"
 
-//#define ENABLE_SENSOR
+#define ENABLE_DISPLAY
+#define ENABLE_SENSOR
 //#define CALIBRATION_MODE
+
+//sensor type define
+//#define TCS3200
+#define TCS34725
+
+//sanitiy check
+#if defined(ENABLE_SENSOR) && defined(TCS3200) && defined(TCS34725)
+  #error Non si possono usare entrambe i sensori. Scegliere TCS3200 o TCS34725
+#endif
+
 
 // PIN per la gestione del sensore TCS3200
 #define S0 4  //D4
@@ -11,6 +23,8 @@
 #define S2 6  //D6
 #define S3 7  //D7
 #define OUT 8 //D8
+
+#define OLED_ADDR 0x3C
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -59,18 +73,28 @@ int blueMin = 0;
 int blueMax = 0;
 
 // Definizione delle funzioni
+#ifdef ENABLE_DISPLAY
 void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message);
+#endif
+
 ColorClass bestMatchRGB(RGBColor currentColor);
 void rawSesnsorRead();
-RGBColor rgbSensorRead();
+RGBColor rgbSensorReadTCS3200();
+RGBColor readRGBColorTCS34725();
 
 // Creo istanza del display
+#ifdef ENABLE_DISPLAY
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT);
+#endif
+
+#if defined(ENABLE_SENSOR) && defined(TCS34725)
+Adafruit_TCS34725 tcs = Adafruit_TCS34725();
+#endif
 
 // Setup dell'arduino NANO e inizializzazione del display
 void setup() {
 
-#ifdef ENABLE_SENSOR
+#if defined(ENABLE_SENSOR) && defined(TCS3200)
   pinMode(S0, OUTPUT);
   pinMode(S1, OUTPUT);
   pinMode(S2, OUTPUT);
@@ -80,10 +104,20 @@ void setup() {
   digitalWrite(S1, LOW);
 #endif
 
+#if defined(ENABLE_SENSOR) && defined(TCS34725)
+  // Inizializzazione sensore TCS34725 (GY-33) tramite I2C
+  if (!tcs.begin()) {
+    // Se il sensore non viene trovato, fermo il programma
+    while (true); // Rimango fermo se sensore non trovato
+  }
+#endif
+
+#ifdef ENABLE_DISPLAY
   //Inizializzazione display
   if (!display.begin( SSD1306_SWITCHCAPVCC, 0x3C)) {
     while (true); //rimango fermo se non lo trovo 
   }
+#endif
   // Buffer clear
   display.clearDisplay();
   // Disegno del display
@@ -97,12 +131,16 @@ void loop()
 {
   RGBColor curretColor;
 #ifdef ENABLE_SENSOR
-  //Leggo il colore dal sensore
-  #ifdef CALIBRATION_MODE
-    rawSesnsorRead(); //lettura dei dati di calibrazione necessaria solo la prima volta
-    return; //// ritorno per riavviare nuovamente le letture e non finire nel while di stop
-  #else
-    curretColor = rgbSensorRead();
+  #ifdef TCS3200
+    //Leggo il colore dal sensore
+    #ifdef CALIBRATION_MODE
+      rawSesnsorRead(); //lettura dei dati di calibrazione necessaria solo la prima volta
+      return; //// ritorno per riavviare nuovamente le letture e non finire nel while di stop
+    #else
+      curretColor = rgbSensorReadTCS3200();
+    #endif
+  #elif defined(TCS34725)
+    curretColor = readRGBColorTCS34725();
   #endif
 #else
   curretColor.r = 101;
@@ -111,6 +149,7 @@ void loop()
 #endif
   //Decido il colore piu vicino e lo stampo a schermo 
   ColorClass col = bestMatchRGB(curretColor);
+#ifdef ENABLE_DISPLAY
   switch(col) {
     case COL_NERO: 
       drawBitmapWithText(epd_bitmap_formica,40,40, "NERO");
@@ -151,11 +190,12 @@ void loop()
     default:
       drawBitmapWithText(epd_bitmap_marrone, 40, 40, "MARRONE");
   }
+#endif
 
   while(true); //leggo solo una volta cosi per leggere bisogna premere nuovamente il pulsante di accensione
 }
 
-
+#ifdef ENABLE_DISPLAY
 // Disegno della bitmap piu testo nella parte bassa del display
 void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message) 
 {
@@ -186,6 +226,7 @@ void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_heig
 
   display.display();
 }
+#endif
 
 // Calcoliamo il colore come la distanza minima in 3 dimensioni 
 // (tralasciando la radice quadrata che non cambia ai fini del trovare il piu vicino)
@@ -193,7 +234,7 @@ ColorClass bestMatchRGB(RGBColor currentColor)
 {
   uint32_t minDist = 0xFFFFFFFF;
   ColorClass best = COL_NERO;
-  for (int i = 0; i < sizeof(color_reference)/sizeof(color_reference[0]); i++) {
+  for (unsigned int i = 0; i < sizeof(color_reference)/sizeof(color_reference[0]); i++) {
     int dr = (int)currentColor.r - color_reference[i].r;
     int dg = (int)currentColor.g - color_reference[i].g;
     int db = (int)currentColor.b - color_reference[i].b;
@@ -208,7 +249,7 @@ ColorClass bestMatchRGB(RGBColor currentColor)
 
 //Funzione per la lettura RAW del sensore in modo da ottenere i dati di calibrazione
 //per la lettura esatta del sensore
-RGBColor rgbSensorRead() 
+RGBColor rgbSensorReadTCS3200() 
 {
   RGBColor colorData;
   // Rosso
@@ -260,7 +301,9 @@ void rawSesnsorRead()
    
   char buffer[200];
   sprintf(buffer,"r: %d, g: %d, b: %d",red,green,blue);
+#ifdef ENABLE_DISPLAY
   drawBitmapWithText(nullptr,0,0,buffer);
+#endif
   
   Serial.print("Red: ");
   Serial.print(red);
@@ -270,4 +313,36 @@ void rawSesnsorRead()
   Serial.println(blue);
 
   delay(500);
+}
+
+RGBColor readRGBColorTCS34725() 
+{
+  RGBColor color;
+#if !defined(TCS34725) || !defined(ENABLE_SENSOR)
+  color.r = 255;
+  color.g = 255;
+  color.b = 255;
+  return color;
+#else
+  uint16_t rRaw, gRaw, bRaw, cRaw;
+  // Lettura dei canali dal sensore
+  tcs.getRawData(&rRaw, &gRaw, &bRaw, &cRaw);
+
+  // Prevenzione divisione per zero
+  if (cRaw == 0) cRaw = 1;
+
+  // Normalizziamo ciascun valore su 8 bit (0-255) in base al canale "clear"
+  color.r = (uint8_t)(min(255, (rRaw * 255) / cRaw));
+  color.g = (uint8_t)(min(255, (gRaw * 255) / cRaw));
+  color.b = (uint8_t)(min(255, (bRaw * 255) / cRaw));
+
+  Serial.print("Red: ");
+  Serial.print(color.r);
+  Serial.print("  Green: ");
+  Serial.print(color.g);
+  Serial.print("  Blue: ");
+  Serial.println(color.b);
+
+  return color;
+#endif
 }
