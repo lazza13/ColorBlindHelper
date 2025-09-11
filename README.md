@@ -14,6 +14,16 @@ Il progetto, realizzato con una board Arduino (NANO) e un sensore di colore (ad 
 - Display OLED I2C (es. SSD1306 da 0,96'')
 - Cavi jumper e breadboard secondo necessità
 
+### Esempio connessione con Arduino NANO
+Resistenze di pullup: Se sia il GY-33 sia il display OLED hanno già resistenze di pullup sugli SDA/SCL, di solito non serve aggiungerne altre, ma se ci sono problemi di comunicazione aggiungere resistenze di 4.7kΩ verso VCC.
+
+| Componente                   | Pin rilevanti                           | Note                                                      |
+|------------------------------|-----------------------------------------|-----------------------------------------------------------|
+| **Arduino Nano**             | SDA (A4), SCL (A5), VCC (5V/3.3V), GND | Microcontrollore principale                              |
+| **Display OLED I2C**         | SDA, SCL, VCC, GND                      | Indirizzo tipico `0x3C`                                   |
+| **Sensore GY-33 (TCS34725)** | SDA, SCL, VCC, GND                      | Basato su TCS34725, indirizzo tipico `0x29`               |
+| **Resistenze di pull-up**    | 4.7kΩ su SDA e SCL                      | Da VCC verso SDA e SCL, solo se mancanti sui moduli       |
+
 ### Software
 - [Visual Studio Code](https://code.visualstudio.com/)
 - [PlatformIO IDE](https://platformio.org/install/ide?install=vscode)
