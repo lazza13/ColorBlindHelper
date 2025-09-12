@@ -32,8 +32,8 @@
 #include "bitmap.h"
 #include "ita_string.h"
 
-//#define ENABLE_DISPLAY
-#define ENABLE_SENSOR
+#define ENABLE_DISPLAY
+//#define ENABLE_SENSOR
 //#define CALIBRATION_MODE
 
 //sensor type define
@@ -68,8 +68,6 @@ typedef struct {
 } RGBColor;
 
 typedef enum {
-    COL_BLACK,
-    COL_WHITE,
     COL_GRAY,
     COL_RED,
     COL_YELLOW,
@@ -83,18 +81,16 @@ typedef enum {
 } ColorClass;
 
 const RGBColor color_reference[] = {
-  {  0,   0,   0 },   // BLACK
-  {255, 255, 255},    // WHITE
-  {127, 127, 127},    // GRAY
-  {220,  20,  60},    // RED
-  {255, 255,   0},    // YELLOW
-  { 34, 139,  34},    // GREEN (verde prato)
-  {  0,   0, 255},    // BLU
-  {139,  69,  19},    // BROWN (marrone scuro)
-  {255, 140,   0},    // ORANGE (arancione scuro)
-  {148,   0, 211},    // PURPLE (viola intenso)
-  {255, 182, 193},    // PINK (rosa chiaro)
-  {135, 206, 250}     // AZURE (azzurro cielo)
+  {65, 98, 86},    // GRAY
+  {120,  71,  64},    // RED
+  {92, 108,   51},    // YELLOW
+  { 63, 122,  72},    // GREEN (verde prato)
+  {  48,   93, 116},    // BLU
+  {100,  89,  66},    // BROWN (marrone scuro)
+  {156, 60,   43},    // ORANGE (arancione scuro)
+  {76,   81, 99},    // PURPLE (viola intenso)
+  {108, 76, 72},    // PINK (rosa chiaro)
+  {44, 105, 109}     // AZURE (azzurro cielo)
 };
 
 
@@ -107,9 +103,7 @@ int blueMin = 0;
 int blueMax = 0;
 
 // Function definition
-#ifdef ENABLE_DISPLAY
-  void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message);
-#endif
+void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message);
 ColorClass bestMatchRGB(RGBColor currentColor);
 void rawSesnsorRead();
 RGBColor rgbSensorReadTCS3200();
@@ -128,7 +122,7 @@ RGBColor readRGBColorTCS34725();
 // Setup of the ARDUINO NANO with pin init
 void setup() 
 {
-
+Serial.begin(9600);
 #if defined(ENABLE_SENSOR) && defined(TCS3200)
   pinMode(S0, OUTPUT);
   pinMode(S1, OUTPUT);
@@ -142,14 +136,17 @@ void setup()
 #if defined(ENABLE_SENSOR) && defined(TCS34725)
   // Sensor init for TCS34725 (GY-33) with I2C
   if (!tcs.begin()) {
+    Serial.print("No sensor");
     // If no sensor found stop the program in a loop
     while (true);
   }
+  tcs.setGain(TCS34725_GAIN_16X);
 #endif
 
 #ifdef ENABLE_DISPLAY
   // Display init
   if (!display.begin( SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.print("No Display");
     while (true); // If no display found stop the program in a loop
   }
     // Buffer clear
@@ -158,7 +155,7 @@ void setup()
   display.display();
 #endif
 
-  Serial.begin(9600);
+  
 }
 
 // Exec Loop
@@ -183,14 +180,7 @@ void loop()
 #endif
   //Find nearest colo meatch
   ColorClass col = bestMatchRGB(curretColor);
-#ifdef ENABLE_DISPLAY
   switch(col) {
-    case COL_BLACK: 
-      drawBitmapWithText(epd_bitmap_black,40,40, BLACK_STR);
-      break;
-    case COL_WHITE:
-      drawBitmapWithText(epd_bitmap_white,40,40, WHITE_STR);
-      break;
     case COL_GRAY:
       drawBitmapWithText(epd_bitmap_gray,40,40, GRAY_STR);
       break;
@@ -224,15 +214,15 @@ void loop()
     default:
       ;
   }
-#endif
 
   while(true); //After one read stop the program. If you want another read push the power button
 }
 
-#ifdef ENABLE_DISPLAY
+
 // Bitmap and text draw function (2/3 Bitmap, 1/3 String) 
 void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message) 
 {
+  #ifdef ENABLE_DISPLAY
   display.clearDisplay();
 
   // Place the bitmap centered at the top
@@ -259,15 +249,16 @@ void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_heig
   display.print(message);
 
   display.display();
-}
 #endif
+  Serial.print(message);
+}
 
 // We calculate color as the minimum distance in 3 dimensions
 // (ignoring the square root which does not change for the purposes of finding the closest)
 ColorClass bestMatchRGB(RGBColor currentColor) 
 {
   uint32_t minDist = 0xFFFFFFFF;
-  ColorClass best = COL_BLACK;
+  ColorClass best = COL_GRAY;
   for (unsigned int i = 0; i < sizeof(color_reference)/sizeof(color_reference[0]); i++) {
     int dr = (int)currentColor.r - color_reference[i].r;
     int dg = (int)currentColor.g - color_reference[i].g;
@@ -361,6 +352,8 @@ RGBColor readRGBColorTCS34725()
   uint16_t rRaw, gRaw, bRaw, cRaw;
   // Reading channels from the sensor
   tcs.getRawData(&rRaw, &gRaw, &bRaw, &cRaw);
+  float r,g,b;
+  tcs.getRGB(&r,&g,&b);
 
   if (cRaw == 0) cRaw = 1;
 
@@ -370,11 +363,13 @@ RGBColor readRGBColorTCS34725()
   color.b = (uint8_t)(min(255, (bRaw * 255) / cRaw));
 
   Serial.print("Red: ");
-  Serial.print(color.r);
+  Serial.print(r);
   Serial.print("  Green: ");
-  Serial.print(color.g);
+  Serial.print(g);
   Serial.print("  Blue: ");
-  Serial.println(color.b);
+  Serial.println(b);
+  // Serial.print("  Clear: ");
+  // Serial.println(cRaw);
 
   return color;
 #endif
