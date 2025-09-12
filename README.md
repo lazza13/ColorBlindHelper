@@ -1,46 +1,55 @@
 # Color Blind Helper
 
-Color Blind Helper è un dispositivo elettronico creato per aiutare le persone daltoniche nel riconoscimento dei colori. Il colore identificato viene visualizzato su un display OLED I2C.
+Color Blind Helper is an electronic device designed to assist people with color vision deficiency in recognizing colors. The identified color is displayed on an I2C OLED display.
 
-## Descrizione
+## Description
 
-Il progetto, realizzato con una board Arduino (NANO) e un sensore di colore (ad esempio TCS3200 o TCS34725), rileva e mostra il nome del colore riconosciuto tramite display OLED I2C. Non sono previsti feedback audio, né altri tipi di output oltre all'OLED (ma potrebbero essere inseriti in futuro).
+The project uses an Arduino board (NANO) and a color sensor (such as TCS3200 or TCS34725) to detect and display the color name on an OLED I2C display. There are no audio feedback or other output types besides the OLED display (though these could be added in future versions).
 
-## Requisiti
+## Requirements
 
 ### Hardware
-- Arduino (Nano ma anche altri arduino a scelta)
-- Sensore di colore (es. TCS3200, TCS34725)
-- Display OLED I2C (es. SSD1306 da 0,96'')
-- Cavi jumper e breadboard secondo necessità
 
-### Esempio connessione con Arduino NANO
-Resistenze di pullup: Se sia il GY-33 sia il display OLED hanno già resistenze di pullup sugli SDA/SCL, di solito non serve aggiungerne altre, ma se ci sono problemi di comunicazione aggiungere resistenze di 4.7kΩ verso VCC.
+- Arduino (Nano preferred, but others can be used)
+- Color sensor (e.g., TCS3200, TCS34725)
+- I2C OLED display (e.g., 0.96'' SSD1306)
+- Jumper wires and breadboard as needed
 
-| Componente                   | Pin rilevanti                           | Note                                                      |
-|------------------------------|-----------------------------------------|-----------------------------------------------------------|
-| **Arduino Nano**             | SDA (A4), SCL (A5), VCC (5V/3.3V), GND | Microcontrollore principale                              |
-| **Display OLED I2C**         | SDA, SCL, VCC, GND                      | Indirizzo tipico `0x3C`                                   |
-| **Sensore GY-33 (TCS34725)** | SDA, SCL, VCC, GND                      | Basato su TCS34725, indirizzo tipico `0x29`               |
-| **Resistenze di pull-up**    | 4.7kΩ su SDA e SCL                      | Da VCC verso SDA e SCL, solo se mancanti sui moduli       |
+### Example Connection with Arduino NANO
+
+**Power Supply and Saving Battery:** The device can be powered using a 9V battery. To minimize battery consumption, a push button is used to supply voltage to the VIN pin of Arduino only when the button is pressed. This way, the device is powered on solely while in use.
+
+**Pull-up resistors:** If both the GY-33 and the OLED display already have pull-up resistors on SDA/SCL, adding extra is usually unnecessary. If there are communication issues, try adding 4.7kΩ pull-up resistors to VCC.
+
+| Component                  | Relevant Pins                            | Notes                                                      |
+|----------------------------|------------------------------------------|------------------------------------------------------------|
+| **Arduino Nano**           | SDA (A4), SCL (A5), VCC (5V/3.3V), GND  | Main microcontroller                                       |
+| **OLED I2C Display**       | SDA, SCL, VCC, GND                       | Typical address `0x3C`                                     |
+| **GY-33 Sensor (TCS34725)**| SDA, SCL, VCC, GND                       | Based on TCS34725, typical address `0x29`                  |
+| **Pull-up Resistors**      | 4.7kΩ on SDA and SCL                     | From VCC to SDA and SCL, only if missing on modules        |
 
 ### Software
+
 - [Visual Studio Code](https://code.visualstudio.com/)
 - [PlatformIO IDE](https://platformio.org/install/ide?install=vscode)
-- Drivers per la board utilizzata
-- Librerie per sensore di colore e display OLED (vedi `platformio.ini`)
+- Drivers for your specific Arduino board
+- Libraries for the color sensor and OLED display (see `platformio.ini`)
 
-## Installazione e uso
+## Installation and Usage
 
-1. **Clona** il repository localmente.
-2. **Apri** la cartella del progetto con VSCode.
-3. **Assicurati** che PlatformIO sia installato come estensione.
-4. **Installa** le librerie specificate in `platformio.ini` (verranno installate automaticamente).
-5. **Assembla** il dispositivo seguendo lo schema (sensore di colore e display OLED I2C collegati all’Arduino).
-6. **Compila** e **carica** il firmware tramite PlatformIO (`Ctrl+Alt+U`).
-7. **Accendi e utilizza**: il colore rilevato verrà visualizzato sul display OLED.
+1. **Clone** the repository to your local machine.
+2. **Open** the project folder in VSCode.
+3. **Ensure** that PlatformIO is installed as an extension.
+4. **Install** the libraries specified in `platformio.ini` (these are installed automatically).
+5. **Assemble** the device according to the diagram (connect the color sensor and OLED I2C display to Arduino).
+6. **Build** and **upload** the firmware via PlatformIO (`Ctrl+Alt+U`).
+7. **Power on and use:** the detected color will be shown on the OLED display.
 
-## Ringraziamenti
-Un caro grazie a tutta la comunità di Arduino e agli sviluppatori delle librerie utilizzate nel progetto
+## Acknowledgements
 
-**PS:** il README l'ho fatto con l'AI perchè non avevo volglia di scrivere
+Special thanks to the Arduino community and the developers of the libraries used in this project.
+
+A further thank you to the creators of the tool [image2cpp](https://javl.github.io/image2cpp/), which greatly facilitated the conversion of bitmaps for use with (monochrome) displays in Arduino projects.
+
+
+**PS:** I wrote this README with AI because I didn’t feel like writing it by hand. Sorry

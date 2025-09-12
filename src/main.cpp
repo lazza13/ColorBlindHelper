@@ -1,23 +1,57 @@
+/*
+
+ * Color Blind Helper
+ * Copyright (c) 2025 Giorgio Lazzaretti (lazza13@gmail.com)
+ *
+ * This software is released under the MIT License.
+ * https://opensource.org/licenses/MIT
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_TCS34725.h>
 #include "bitmap.h"
+#include "ita_string.h"
 
 #define ENABLE_DISPLAY
 #define ENABLE_SENSOR
 //#define CALIBRATION_MODE
 
 //sensor type define
-//#define TCS3200
-#define TCS34725
+#ifdef ENABLE_SENSOR
+  //#define TCS3200
+  #define TCS34725
+  #ifdef TCS3200
+    //#define CALIBRATION_MODE
+  #endif
+#endif
 
 //sanitiy check
 #if defined(ENABLE_SENSOR) && defined(TCS3200) && defined(TCS34725)
-  #error Non si possono usare entrambe i sensori. Scegliere TCS3200 o TCS34725
+  #error Choose TCS3200 or TCS34725. It cannot reads both sensor at the same time.
 #endif
 
 
-// PIN per la gestione del sensore TCS3200
+// PIN for TCS3200 sensor
 #define S0 4  //D4
 #define S1 5  //D5
 #define S2 6  //D6
@@ -34,37 +68,37 @@ typedef struct {
 } RGBColor;
 
 typedef enum {
-    COL_NERO,
-    COL_BIANCO,
-    COL_GRIGIO,
-    COL_ROSSO,
-    COL_GIALLO,
-    COL_VERDE,
-    COL_BLU,
-    COL_MARRONE,
-    COL_ARANCIONE,
-    COL_VIOLA,
-    COL_ROSA,
-    COL_AZZURRO
+    COL_BLACK,
+    COL_WHITE,
+    COL_GRAY,
+    COL_RED,
+    COL_YELLOW,
+    COL_GREEN,
+    COL_BLUE,
+    COL_BROWN,
+    COL_ORANGE,
+    COL_PURPLE,
+    COL_PINK,
+    COL_AZURE
 } ColorClass;
 
 const RGBColor color_reference[] = {
-  {  0,   0,   0 },   // NERO
-  {255, 255, 255},    // BIANCO
-  {127, 127, 127},    // GRIGIO
-  {220,  20,  60},    // ROSSO
-  {255, 255,   0},    // GIALLO
-  { 34, 139,  34},    // VERDE (verde prato)
+  {  0,   0,   0 },   // BLACK
+  {255, 255, 255},    // WHITE
+  {127, 127, 127},    // GRAY
+  {220,  20,  60},    // RED
+  {255, 255,   0},    // YELLOW
+  { 34, 139,  34},    // GREEN (verde prato)
   {  0,   0, 255},    // BLU
-  {139,  69,  19},    // MARRONE (marrone scuro)
-  {255, 140,   0},    // ARANCIONE (arancione scuro)
-  {148,   0, 211},    // VIOLA (viola intenso)
-  {255, 182, 193},    // ROSA (rosa chiaro)
-  {135, 206, 250}     // AZZURRO (azzurro cielo)
+  {139,  69,  19},    // BROWN (marrone scuro)
+  {255, 140,   0},    // ORANGE (arancione scuro)
+  {148,   0, 211},    // PURPLE (viola intenso)
+  {255, 182, 193},    // PINK (rosa chiaro)
+  {135, 206, 250}     // AZURE (azzurro cielo)
 };
 
 
-// Valori da calibrare con superfici di riferimento bianca (MAX) e nera (MIN)
+// Value for calibration of the TCS3200. White surface and black surface
 int redMin = 0;   
 int redMax = 0;
 int greenMin = 0;
@@ -72,27 +106,28 @@ int greenMax = 0;
 int blueMin = 0;
 int blueMax = 0;
 
-// Definizione delle funzioni
+// Function definition
 #ifdef ENABLE_DISPLAY
-void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message);
+  void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message);
 #endif
-
 ColorClass bestMatchRGB(RGBColor currentColor);
 void rawSesnsorRead();
 RGBColor rgbSensorReadTCS3200();
 RGBColor readRGBColorTCS34725();
 
-// Creo istanza del display
+// Display object
 #ifdef ENABLE_DISPLAY
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT);
+  Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT);
 #endif
 
+// Sensor object
 #if defined(ENABLE_SENSOR) && defined(TCS34725)
-Adafruit_TCS34725 tcs = Adafruit_TCS34725();
+  Adafruit_TCS34725 tcs = Adafruit_TCS34725();
 #endif
 
-// Setup dell'arduino NANO e inizializzazione del display
-void setup() {
+// Setup of the ARDUINO NANO with pin init
+void setup() 
+{
 
 #if defined(ENABLE_SENSOR) && defined(TCS3200)
   pinMode(S0, OUTPUT);
@@ -105,37 +140,36 @@ void setup() {
 #endif
 
 #if defined(ENABLE_SENSOR) && defined(TCS34725)
-  // Inizializzazione sensore TCS34725 (GY-33) tramite I2C
+  // Sensor init for TCS34725 (GY-33) with I2C
   if (!tcs.begin()) {
-    // Se il sensore non viene trovato, fermo il programma
-    while (true); // Rimango fermo se sensore non trovato
+    // If no sensor found stop the program in a loop
+    while (true);
   }
 #endif
 
 #ifdef ENABLE_DISPLAY
-  //Inizializzazione display
+  // Display init
   if (!display.begin( SSD1306_SWITCHCAPVCC, 0x3C)) {
-    while (true); //rimango fermo se non lo trovo 
+    while (true); // If no display found stop the program in a loop
   }
 #endif
   // Buffer clear
   display.clearDisplay();
-  // Disegno del display
+  // Apply to display
   display.display();
 
   Serial.begin(9600);
 }
 
-// Loop di esecuzione
+// Exec Loop
 void loop() 
 {
   RGBColor curretColor;
 #ifdef ENABLE_SENSOR
   #ifdef TCS3200
-    //Leggo il colore dal sensore
     #ifdef CALIBRATION_MODE
-      rawSesnsorRead(); //lettura dei dati di calibrazione necessaria solo la prima volta
-      return; //// ritorno per riavviare nuovamente le letture e non finire nel while di stop
+      rawSesnsorRead(); //read of the calibration parameters (only first time)
+      return; //// exit from loop to avoid while at the end and read again
     #else
       curretColor = rgbSensorReadTCS3200();
     #endif
@@ -147,74 +181,74 @@ void loop()
   curretColor.g = 67;
   curretColor.b = 33;
 #endif
-  //Decido il colore piu vicino e lo stampo a schermo 
+  //Find nearest colo meatch
   ColorClass col = bestMatchRGB(curretColor);
 #ifdef ENABLE_DISPLAY
   switch(col) {
-    case COL_NERO: 
-      drawBitmapWithText(epd_bitmap_formica,40,40, "NERO");
+    case COL_BLACK: 
+      drawBitmapWithText(epd_bitmap_black,40,40, BLACK_STR);
       break;
-    case COL_BIANCO:
-      drawBitmapWithText(epd_bitmap_nuvola,40,40, "BIANCO");
+    case COL_WHITE:
+      drawBitmapWithText(epd_bitmap_white,40,40, WHITE_STR);
       break;
-    case COL_GRIGIO:
-      drawBitmapWithText(epd_bitmap_spada,40,40, "GRIGIO");
+    case COL_GRAY:
+      drawBitmapWithText(epd_bitmap_gray,40,40, GRAY_STR);
       break;
-    case COL_ROSSO:
-      drawBitmapWithText(epd_bitmap_cuore,40,40, "ROSSO");
+    case COL_RED:
+      drawBitmapWithText(epd_bitmap_red,40,40, RED_STR);
       break;
-    case COL_GIALLO:
-      drawBitmapWithText(epd_bitmap_sun, 40, 40, "GIALLO");
+    case COL_YELLOW:
+      drawBitmapWithText(epd_bitmap_yellow, 40, 40, YELLOW_STR);
       break;
-    case COL_BLU:
-      drawBitmapWithText(epd_bitmap_onde,40,40, "BLU");
+    case COL_BLUE:
+      drawBitmapWithText(epd_bitmap_blue,40,40, BLUE_STR);
       break;
-    case COL_MARRONE:
-      drawBitmapWithText(epd_bitmap_marrone, 40, 40, "MARRONE");
+    case COL_BROWN:
+      drawBitmapWithText(epd_bitmap_brown, 40, 40, BROWN_STR);
       break;
-    case COL_ARANCIONE:
-      drawBitmapWithText(epd_bitmap_arancia,40,40, "ARANCIONE");
+    case COL_ORANGE:
+      drawBitmapWithText(epd_bitmap_orange,40,40, ORANGESTR_STR);
       break;
-    case COL_VIOLA:
-      drawBitmapWithText(epd_bitmap_principessa,40,40, "VIOLA");
+    case COL_PURPLE:
+      drawBitmapWithText(epd_bitmap_purple,40,40, PURPLE_STR);
       break;
-    case COL_ROSA:
-      drawBitmapWithText(epd_bitmap_rosa, 40, 40, "ROSA");
+    case COL_PINK:
+      drawBitmapWithText(epd_bitmap_pink, 40, 40, PINK_STR);
       break;
-    case COL_AZZURRO:
-      drawBitmapWithText(epd_bitmap_maglietta,40,40, "AZZURRO");
+    case COL_AZURE:
+      drawBitmapWithText(epd_bitmap_azure,40,40, AZURE_STR);
       break;
-    case COL_VERDE:
-      drawBitmapWithText(epd_bitmap_foglia, 40, 40, "VERDE");
+    case COL_GREEN:
+      drawBitmapWithText(epd_bitmap_green, 40, 40, GREEN_STR);
       break;
     default:
-      drawBitmapWithText(epd_bitmap_marrone, 40, 40, "MARRONE");
+      ;
   }
 #endif
 
-  while(true); //leggo solo una volta cosi per leggere bisogna premere nuovamente il pulsante di accensione
+  while(true); //After one read stop the program. If you want another read push the power button
 }
 
 #ifdef ENABLE_DISPLAY
-// Disegno della bitmap piu testo nella parte bassa del display
+// Bitmap and text draw function (2/3 Bitmap, 1/3 String) 
 void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message) 
 {
   display.clearDisplay();
 
-  // Posiziona la bitmap centrata nella parte superiore
+  // Place the bitmap centered at the top
   int x_bmp = (SCREEN_WIDTH - bmp_width) / 2;
   int y_bmp = 0;
 
   display.drawBitmap(x_bmp, y_bmp, bitmap, bmp_width, bmp_height, WHITE);
 
-  // Imposta dimensione testo
+  // Set text size
   display.setTextSize(2);
   display.setTextColor(WHITE);
 
-  // Calcola dove centrare il testo (**terzo inferiore**)
+  // Calculate where to center the text (**lower third**)
   int y_text = bmp_height + ((SCREEN_HEIGHT - bmp_height - 16) / 2); // 16 = font size 2 approx.
 
-  // Calcola larghezza del testo per centrarlo orizzontalmente
+  // Calculate text width to center it horizontally
   int16_t x1, y1;
   uint16_t w, h;
   display.getTextBounds(message, 0, 0, &x1, &y1, &w, &h);
@@ -228,12 +262,12 @@ void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_heig
 }
 #endif
 
-// Calcoliamo il colore come la distanza minima in 3 dimensioni 
-// (tralasciando la radice quadrata che non cambia ai fini del trovare il piu vicino)
+// We calculate color as the minimum distance in 3 dimensions
+// (ignoring the square root which does not change for the purposes of finding the closest)
 ColorClass bestMatchRGB(RGBColor currentColor) 
 {
   uint32_t minDist = 0xFFFFFFFF;
-  ColorClass best = COL_NERO;
+  ColorClass best = COL_BLACK;
   for (unsigned int i = 0; i < sizeof(color_reference)/sizeof(color_reference[0]); i++) {
     int dr = (int)currentColor.r - color_reference[i].r;
     int dg = (int)currentColor.g - color_reference[i].g;
@@ -247,17 +281,17 @@ ColorClass bestMatchRGB(RGBColor currentColor)
   return best;
 }
 
-//Funzione per la lettura RAW del sensore in modo da ottenere i dati di calibrazione
-//per la lettura esatta del sensore
+// Function for RAW sensor reading to obtain calibration data
+// for exact sensor readings
 RGBColor rgbSensorReadTCS3200() 
 {
   RGBColor colorData;
-  // Rosso
+  // Red
   digitalWrite(S2, LOW);
   digitalWrite(S3, LOW);
   int redRaw = pulseIn(OUT, LOW);
 
-  // Verde
+  // Green
   digitalWrite(S2, HIGH);
   digitalWrite(S3, HIGH);
   int greenRaw = pulseIn(OUT, LOW);
@@ -267,12 +301,12 @@ RGBColor rgbSensorReadTCS3200()
   digitalWrite(S3, HIGH);
   int blueRaw = pulseIn(OUT, LOW);
 
-  // Conversione da raw a scala 0-255 (mappando l’intervallo tra i tuoi minimi e massimi)
+  // Converting from raw to 0-255 scale (mapping the range between your minimums and maximums)
   int red = map(redRaw, redMin, redMax, 255, 0);
   int green = map(greenRaw, greenMin, greenMax, 255, 0);
   int blue = map(blueRaw, blueMin, blueMax, 255, 0);
 
-  // Limita i valori tra 0 e 255
+  // Limit values ​​between 0 and 255
   colorData.r = constrain(red, 0, 255);
   colorData.g = constrain(green, 0, 255);
   colorData.b = constrain(blue, 0, 255);
@@ -280,20 +314,20 @@ RGBColor rgbSensorReadTCS3200()
   return colorData;
 }
 
-// Funzione per la lettura del colore in formato RGB con dati di calibrazione
+// Function for reading color in RGB format with calibration data
 void rawSesnsorRead() 
 {
-  // Rosso
+  // Read
   digitalWrite(S2, LOW);
   digitalWrite(S3, LOW);
   int red = pulseIn(OUT, LOW);
 
-  // Verde
+  // Green
   digitalWrite(S2, HIGH);
   digitalWrite(S3, HIGH);
   int green = pulseIn(OUT, LOW);
 
-  // Blu
+  // Blue
   digitalWrite(S2, LOW);
   digitalWrite(S3, HIGH);
   int blue = pulseIn(OUT, LOW);
@@ -325,13 +359,12 @@ RGBColor readRGBColorTCS34725()
   return color;
 #else
   uint16_t rRaw, gRaw, bRaw, cRaw;
-  // Lettura dei canali dal sensore
+  // Reading channels from the sensor
   tcs.getRawData(&rRaw, &gRaw, &bRaw, &cRaw);
 
-  // Prevenzione divisione per zero
   if (cRaw == 0) cRaw = 1;
 
-  // Normalizziamo ciascun valore su 8 bit (0-255) in base al canale "clear"
+  // We normalize each value to 8 bits (0-255) based on the "clear" channel
   color.r = (uint8_t)(min(255, (rRaw * 255) / cRaw));
   color.g = (uint8_t)(min(255, (gRaw * 255) / cRaw));
   color.b = (uint8_t)(min(255, (bRaw * 255) / cRaw));
