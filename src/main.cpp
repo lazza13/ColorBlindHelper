@@ -33,7 +33,7 @@
 #include "ita_string.h"
 
 #define ENABLE_DISPLAY
-//#define ENABLE_SENSOR
+#define ENABLE_SENSOR
 //#define CALIBRATION_MODE
 
 //sensor type define
@@ -122,7 +122,8 @@ RGBColor readRGBColorTCS34725();
 // Setup of the ARDUINO NANO with pin init
 void setup() 
 {
-Serial.begin(9600);
+  Serial.begin(9600);
+  Serial.println("Running");
 #if defined(ENABLE_SENSOR) && defined(TCS3200)
   pinMode(S0, OUTPUT);
   pinMode(S1, OUTPUT);
@@ -131,6 +132,18 @@ Serial.begin(9600);
   pinMode(OUT, INPUT);
   digitalWrite(S0, HIGH);
   digitalWrite(S1, LOW);
+#endif
+
+#ifdef ENABLE_DISPLAY
+  // Display init
+  if (!display.begin( SSD1306_SWITCHCAPVCC, 0x3C, true)) {
+    Serial.print("No Display");
+    while (true); // If no display found stop the program in a loop
+  }
+    // Buffer clear
+  display.clearDisplay();
+  // Apply to display
+  display.display();
 #endif
 
 #if defined(ENABLE_SENSOR) && defined(TCS34725)
@@ -142,20 +155,6 @@ Serial.begin(9600);
   }
   tcs.setGain(TCS34725_GAIN_16X);
 #endif
-
-#ifdef ENABLE_DISPLAY
-  // Display init
-  if (!display.begin( SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.print("No Display");
-    while (true); // If no display found stop the program in a loop
-  }
-    // Buffer clear
-  display.clearDisplay();
-  // Apply to display
-  display.display();
-#endif
-
-  
 }
 
 // Exec Loop
@@ -214,8 +213,7 @@ void loop()
     default:
       ;
   }
-
-  while(true); //After one read stop the program. If you want another read push the power button
+  delay(500);
 }
 
 
