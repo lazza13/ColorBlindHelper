@@ -32,7 +32,7 @@
 #include "bitmap.h"
 #include "ita_string.h"
 
-#define ENABLE_DISPLAY
+//#define ENABLE_DISPLAY
 #define ENABLE_SENSOR
 //#define CALIBRATION_MODE
 
@@ -152,11 +152,11 @@ void setup()
   if (!display.begin( SSD1306_SWITCHCAPVCC, 0x3C)) {
     while (true); // If no display found stop the program in a loop
   }
-#endif
-  // Buffer clear
+    // Buffer clear
   display.clearDisplay();
   // Apply to display
   display.display();
+#endif
 
   Serial.begin(9600);
 }
