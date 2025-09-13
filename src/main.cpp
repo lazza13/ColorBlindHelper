@@ -81,15 +81,15 @@ typedef enum {
 } ColorClass;
 
 const RGBColor color_reference[] = {
-  {65, 98, 86},    // GRAY
+  {35, 35, 36},    // GRAY
   {120,  71,  64},    // RED
   {92, 108,   51},    // YELLOW
   { 63, 122,  72},    // GREEN (verde prato)
   {  48,   93, 116},    // BLU
   {100,  89,  66},    // BROWN (marrone scuro)
   {156, 60,   43},    // ORANGE (arancione scuro)
-  {76,   81, 99},    // PURPLE (viola intenso)
-  {108, 76, 72},    // PINK (rosa chiaro)
+  {76,   79, 107},    // PURPLE (viola intenso)
+  {102, 76, 72},    // PINK (rosa chiaro)
   {44, 105, 109}     // AZURE (azzurro cielo)
 };
 
@@ -211,6 +211,7 @@ void loop()
       drawBitmapWithText(epd_bitmap_green, 40, 40, GREEN_STR);
       break;
     default:
+      drawBitmapWithText(nullptr, 0, 0, "?????");
       ;
   }
   delay(500);
@@ -248,9 +249,10 @@ void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_heig
 
   display.display();
 #endif
-  Serial.print(message);
+  Serial.println(message);
 }
 
+#define THRESHOLD 700 
 // We calculate color as the minimum distance in 3 dimensions
 // (ignoring the square root which does not change for the purposes of finding the closest)
 ColorClass bestMatchRGB(RGBColor currentColor) 
@@ -266,6 +268,10 @@ ColorClass bestMatchRGB(RGBColor currentColor)
       minDist = dist;
       best = (ColorClass)i;
     }
+  }
+  Serial.println(minDist);
+  if (minDist > THRESHOLD) {
+      return -1; // return -1 to print ????? 
   }
   return best;
 }
@@ -347,18 +353,12 @@ RGBColor readRGBColorTCS34725()
   color.b = 255;
   return color;
 #else
-  uint16_t rRaw, gRaw, bRaw, cRaw;
-  // Reading channels from the sensor
-  tcs.getRawData(&rRaw, &gRaw, &bRaw, &cRaw);
   float r,g,b;
   tcs.getRGB(&r,&g,&b);
 
-  if (cRaw == 0) cRaw = 1;
-
-  // We normalize each value to 8 bits (0-255) based on the "clear" channel
-  color.r = (uint8_t)(min(255, (rRaw * 255) / cRaw));
-  color.g = (uint8_t)(min(255, (gRaw * 255) / cRaw));
-  color.b = (uint8_t)(min(255, (bRaw * 255) / cRaw));
+  color.r = (uint8_t)r;
+  color.g = (uint8_t)g;
+  color.b = (uint8_t)b;
 
   Serial.print("Red: ");
   Serial.print(r);
