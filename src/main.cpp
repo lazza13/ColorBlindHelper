@@ -87,7 +87,7 @@ const RGBColor color_reference[] = {
   { 63, 122,  72},    // GREEN (verde prato)
   {  48,   93, 116},    // BLU
   {100,  89,  66},    // BROWN (marrone scuro)
-  {156, 60,   43},    // ORANGE (arancione scuro)
+  {120, 85,   51},    // ORANGE (arancione scuro)
   {76,   79, 107},    // PURPLE (viola intenso)
   {102, 76, 72},    // PINK (rosa chiaro)
   {44, 105, 109}     // AZURE (azzurro cielo)
