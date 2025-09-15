@@ -68,6 +68,7 @@ typedef struct {
 } RGBColor;
 
 typedef enum {
+    COL_UNDEFINED = -1,
     COL_GRAY,
     COL_RED,
     COL_YELLOW,
@@ -80,17 +81,23 @@ typedef enum {
     COL_AZURE
 } ColorClass;
 
-const RGBColor color_reference[] = {
-  {35, 35, 36},    // GRAY
-  {120,  71,  64},    // RED
-  {92, 108,   51},    // YELLOW
-  { 63, 122,  72},    // GREEN (verde prato)
-  {  48,   93, 116},    // BLU
-  {100,  89,  66},    // BROWN (marrone scuro)
-  {120, 85,   51},    // ORANGE (arancione scuro)
-  {76,   79, 107},    // PURPLE (viola intenso)
-  {102, 76, 72},    // PINK (rosa chiaro)
-  {44, 105, 109}     // AZURE (azzurro cielo)
+typedef struct {
+  RGBColor reference_color;
+  ColorClass color_class;
+} ColoReference;
+
+//Calibrate this value with your specific sensor
+const ColoReference color_reference[] = {
+  {{35,   35,   36},  COL_GRAY},    // GRAY
+  {{120,  71,   64},  COL_RED},     // RED
+  {{92,   108,  51},  COL_YELLOW},  // YELLOW
+  {{63,   122,  72},  COL_GREEN},   // GREEN (verde prato)
+  {{48,   93,   116}, COL_BLUE},    // BLU
+  {{100,  89,   66},  COL_BROWN},   // BROWN (marrone scuro)
+  {{120,  85,   51},  COL_ORANGE},  // ORANGE (arancione scuro)
+  {{76,   79,   107}, COL_PURPLE},  // PURPLE (viola intenso)
+  {{102,  76,   72},  COL_PINK},    // PINK (rosa chiaro)
+  {{44,   105,  109}, COL_AZURE}    // AZURE (azzurro cielo)
 };
 
 
@@ -258,21 +265,18 @@ void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_heig
 ColorClass bestMatchRGB(RGBColor currentColor) 
 {
   uint32_t minDist = 0xFFFFFFFF;
-  ColorClass best = COL_GRAY;
+  ColorClass best = COL_UNDEFINED;
   for (unsigned int i = 0; i < sizeof(color_reference)/sizeof(color_reference[0]); i++) {
-    int dr = (int)currentColor.r - color_reference[i].r;
-    int dg = (int)currentColor.g - color_reference[i].g;
-    int db = (int)currentColor.b - color_reference[i].b;
+    int dr = (int)currentColor.r - color_reference[i].reference_color.r;
+    int dg = (int)currentColor.g - color_reference[i].reference_color.g;
+    int db = (int)currentColor.b - color_reference[i].reference_color.b;
     uint32_t dist = dr*dr + dg*dg + db*db;
-    if (dist < minDist) {
+    if (dist < minDist && minDist <= THRESHOLD) {
       minDist = dist;
-      best = (ColorClass)i;
+      best = color_reference[i].color_class;
     }
   }
   Serial.println(minDist);
-  if (minDist > THRESHOLD) {
-      return -1; // return -1 to print ????? 
-  }
   return best;
 }
 
