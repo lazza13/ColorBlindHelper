@@ -88,16 +88,30 @@ typedef struct {
 
 //Calibrate this value with your specific sensor
 const ColoReference color_reference[] = {
-  {{35,   35,   36},  COL_GRAY},    // GRAY
-  {{120,  71,   64},  COL_RED},     // RED
-  {{92,   108,  51},  COL_YELLOW},  // YELLOW
-  {{63,   122,  72},  COL_GREEN},   // GREEN (verde prato)
-  {{48,   93,   116}, COL_BLUE},    // BLU
-  {{100,  89,   66},  COL_BROWN},   // BROWN (marrone scuro)
-  {{120,  85,   51},  COL_ORANGE},  // ORANGE (arancione scuro)
-  {{76,   79,   107}, COL_PURPLE},  // PURPLE (viola intenso)
-  {{102,  76,   72},  COL_PINK},    // PINK (rosa chiaro)
-  {{44,   105,  109}, COL_AZURE}    // AZURE (azzurro cielo)
+  {{50,   50,   50},  COL_GRAY},    // GRAY
+  {{112,  79,   71},  COL_RED},     // RED
+  {{108,  78,   73},  COL_RED},     // RED Dark
+  {{120,  76,   66},  COL_RED},     // RED Light
+  {{92,   106,  50},  COL_YELLOW},  // YELLOW
+  {{104,  100,  51},  COL_YELLOW},  // YELLOW Dark
+  {{57,   115,  85},  COL_GREEN},   // GREEN 
+  {{53,   109,  95},  COL_GREEN},   // GREEN Dark
+  {{77,   117,  71},  COL_GREEN},   // GREEN Light
+  {{51,   96,   107}, COL_BLUE},    // BLU dark
+  {{43,   95,   119}, COL_BLUE},    // BLU light
+  {{95,   92,   70},  COL_BROWN},   // BROWN
+  {{91,   93,   70},  COL_BROWN},   // BROWN dark
+  {{95,   92,   66},  COL_BROWN},   // BROWN light
+  {{113,  87,   60},  COL_ORANGE},  // ORANGE 
+  {{117,  82,   62},  COL_ORANGE},  // ORANGE dark
+  {{111,  90,   56},  COL_ORANGE},  // ORANGE light
+  {{53,   85,   117}, COL_PURPLE},  // PURPLE 
+  {{95,   76,   90}, COL_PURPLE},  // PURPLE light
+  {{85,   93,   80},  COL_PINK},    // PINK
+  {{90,   84,   85},  COL_PINK},    // PINK dark
+  {{76,   95,   86},  COL_PINK},    // PINK light
+  {{41,   98,   117}, COL_AZURE},    // AZURE 
+  {{38,   100,  119}, COL_AZURE}    // AZURE scuro
 };
 
 
@@ -271,7 +285,7 @@ ColorClass bestMatchRGB(RGBColor currentColor)
     int dg = (int)currentColor.g - color_reference[i].reference_color.g;
     int db = (int)currentColor.b - color_reference[i].reference_color.b;
     uint32_t dist = dr*dr + dg*dg + db*db;
-    if (dist < minDist && minDist <= THRESHOLD) {
+    if (dist < minDist && dist <= THRESHOLD) {
       minDist = dist;
       best = color_reference[i].color_class;
     }
