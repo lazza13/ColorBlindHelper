@@ -25,10 +25,12 @@
  * SOFTWARE.
  */
 
-
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_TCS34725.h>
+#if defined(ESP32) && defined(COLORBLINDHELPER_OLED042)
+  #include <U8g2lib.h>
+#endif
 #include "bitmap.h"
 #include "ita_string.h"
 
@@ -62,6 +64,17 @@
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+// esp32 c3 oled def
+#if defined(ESP32) && defined(COLORBLINDHELPER_OLED042)
+  const int OLED_WIDTH = 72, OLED_HEIGHT = 40, X_OFFSET = 28, Y_OFFSET = 32;
+  U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, 6, 5);
+#else 
+    // Display object
+  #ifdef ENABLE_DISPLAY
+    Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT);
+  #endif
+#endif
 
 typedef struct {
   uint8_t r, g, b;
@@ -130,11 +143,6 @@ void rawSesnsorRead();
 RGBColor rgbSensorReadTCS3200();
 RGBColor readRGBColorTCS34725();
 
-// Display object
-#ifdef ENABLE_DISPLAY
-  Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT);
-#endif
-
 // Sensor object
 #if defined(ENABLE_SENSOR) && defined(TCS34725)
   Adafruit_TCS34725 tcs = Adafruit_TCS34725();
@@ -156,15 +164,22 @@ void setup()
 #endif
 
 #ifdef ENABLE_DISPLAY
-  // Display init
-  if (!display.begin( SSD1306_SWITCHCAPVCC, 0x3C, true)) {
-    Serial.print("No Display");
-    while (true); // If no display found stop the program in a loop
-  }
-    // Buffer clear
-  display.clearDisplay();
-  // Apply to display
-  display.display();
+  #if defined(ESP32) && defined(COLORBLINDHELPER_OLED042)
+    delay(1000);              // raccomanded from some exaple
+    u8g2.begin();
+    u8g2.setContrast(255);    // best visibility
+    u8g2.setBusClock(400000); 
+  #else
+    // Display init
+    if (!display.begin( SSD1306_SWITCHCAPVCC, 0x3C, true)) {
+      Serial.print("No Display");
+      while (true); // If no display found stop the program in a loop
+    }
+      // Buffer clear
+    display.clearDisplay();
+    // Apply to display
+    display.display();
+  #endif
 #endif
 
 #if defined(ENABLE_SENSOR) && defined(TCS34725)
@@ -194,9 +209,9 @@ void loop()
     curretColor = readRGBColorTCS34725();
   #endif
 #else
-  curretColor.r = 101;
-  curretColor.g = 67;
-  curretColor.b = 33;
+  curretColor.r = 112;
+  curretColor.g = 79;
+  curretColor.b = 71;
 #endif
   //Find nearest colo meatch
   ColorClass col = bestMatchRGB(curretColor);
@@ -243,32 +258,44 @@ void loop()
 void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message) 
 {
   #ifdef ENABLE_DISPLAY
-  display.clearDisplay();
+    #ifdef COLORBLINDHELPER_OLED042
+      // --- PER OLED 0.42" su ESP32-C3/U8G2 ---
+      u8g2.clearBuffer();
 
-  // Place the bitmap centered at the top
-  int x_bmp = (SCREEN_WIDTH - bmp_width) / 2;
-  int y_bmp = 0;
+      // // Bitmap centrata nell'area visibile con offset
+      // int x_bmp = X_OFFSET/2 + (OLED_WIDTH  - bmp_width) / 2;
+      // int y_bmp = Y_OFFSET/2 + 2;
+      // u8g2.drawXBMP(x_bmp, y_bmp, bmp_width, bmp_height, bitmap);
 
-  display.drawBitmap(x_bmp, y_bmp, bitmap, bmp_width, bmp_height, WHITE);
+      // Testo centrato sotto la bitmap
+      u8g2.setFont(u8g2_font_ncenB10_tr);
+      int textWidth = u8g2.getStrWidth(message);
+      int x_text = X_OFFSET + (OLED_WIDTH - textWidth) / 2;
+      int y_text = Y_OFFSET + OLED_HEIGHT - 8 -1;
 
-  // Set text size
-  display.setTextSize(2);
-  display.setTextColor(WHITE);
+      u8g2.drawStr(x_text, y_text, message);
 
-  // Calculate where to center the text (**lower third**)
-  int y_text = bmp_height + ((SCREEN_HEIGHT - bmp_height - 16) / 2); // 16 = font size 2 approx.
+      u8g2.sendBuffer();
 
-  // Calculate text width to center it horizontally
-  int16_t x1, y1;
-  uint16_t w, h;
-  display.getTextBounds(message, 0, 0, &x1, &y1, &w, &h);
+  #else
+      // --- PER DISPLAY CLASSICO Adafruit SSD1306 ---
+      display.clearDisplay();
+      int x_bmp = (display.width() - bmp_width) / 2;
+      int y_bmp = 0;
+      display.drawBitmap(x_bmp, y_bmp, bitmap, bmp_width, bmp_height, WHITE);
 
-  int x_text = (SCREEN_WIDTH - w) / 2;
+      display.setTextSize(2); // o regola secondo font desiderato
+      display.setTextColor(WHITE);
+      int16_t x1, y1;
+      uint16_t w, h;
+      display.getTextBounds(message, 0, 0, &x1, &y1, &w, &h);
+      int x_text = (display.width() - w) / 2;
+      int y_text = bmp_height + ((display.height() - bmp_height - 16) / 2);
 
-  display.setCursor(x_text, y_text);
-  display.print(message);
-
-  display.display();
+      display.setCursor(x_text, y_text);
+      display.print(message);
+      display.display();
+  #endif
 #endif
   Serial.println(message);
 }
