@@ -21,12 +21,20 @@ The project uses an Arduino board (NANO) and a color sensor (such as TCS3200 or 
 
 **Pull-up resistors:** If both the GY-33 and the OLED display already have pull-up resistors on SDA/SCL, adding extra is usually unnecessary. If there are communication issues, try adding 4.7kΩ pull-up resistors to VCC.
 
-| Component                  | Relevant Pins                            | Notes                                                      |
-|----------------------------|------------------------------------------|------------------------------------------------------------|
-| **Arduino Nano**           | SDA (A4), SCL (A5), VCC (5V/3.3V), GND  | Main microcontroller                                       |
-| **OLED I2C Display**       | SDA, SCL, VCC, GND                       | Typical address `0x3C`                                     |
-| **GY-33 Sensor (TCS34725)**| SDA, SCL, VCC, GND                       | Based on TCS34725, typical address `0x29`                  |
-| **Pull-up Resistors**      | 4.7kΩ on SDA and SCL                     | From VCC to SDA and SCL, only if missing on modules        |
+| Component                   | Relevant Pins                          | Notes                                               |
+| --------------------------- | -------------------------------------- | --------------------------------------------------- |
+| **Arduino Nano**            | SDA (A4), SCL (A5), VCC (5V/3.3V), GND | Main microcontroller                                |
+| **OLED I2C Display**        | SDA, SCL, VCC, GND                     | Typical address `0x3C`                              |
+| **GY-33 Sensor (TCS34725)** | SDA, SCL, VCC, GND                     | Based on TCS34725, typical address `0x29`           |
+| **Pull-up Resistors**       | 4.7kΩ on SDA and SCL                   | From VCC to SDA and SCL, only if missing on modules |
+
+It is also possible to use a ESP32 instead of an Arduino but you have to pay attention to the pinout differece. I added Esp32-c3 with OLED display built-in to the project to make it smaller. You can see some image:
+
+![first](img/IMG_7993.jpeg)
+
+![second](img/IMG_7994.jpeg)
+
+![third](img/IMG_7995.jpeg)
 
 ### Software
 
@@ -50,7 +58,6 @@ The project uses an Arduino board (NANO) and a color sensor (such as TCS3200 or 
 Special thanks to the Arduino community and the developers of the libraries used in this project.
 
 A further thank you to the creators of the tool [image2cpp](https://javl.github.io/image2cpp/), which greatly facilitated the conversion of bitmaps for use with (monochrome) displays in Arduino projects.
-
 
 **PS:** I wrote this README with AI because I didn’t feel like writing it by hand. Sorry
 
