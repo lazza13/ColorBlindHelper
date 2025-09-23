@@ -25,13 +25,17 @@
  * SOFTWARE.
  */
 
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+
 #include <Adafruit_TCS34725.h>
 #if defined(ESP32) && defined(COLORBLINDHELPER_OLED042)
   #include <U8g2lib.h>
+  #include "small_bitmap.h"
+#else
+  #include <Adafruit_GFX.h>
+  #include <Adafruit_SSD1306.h>
+  #include "bitmap.h"
 #endif
-#include "bitmap.h"
+
 #include "ita_string.h"
 
 #define ENABLE_DISPLAY
@@ -62,18 +66,19 @@
 
 #define OLED_ADDR 0x3C
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-
 // esp32 c3 oled def
 #if defined(ESP32) && defined(COLORBLINDHELPER_OLED042)
   const int OLED_WIDTH = 72, OLED_HEIGHT = 40, X_OFFSET = 28, Y_OFFSET = 32;
   U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, 6, 5);
+  #define BITMAP_SIZE 20
 #else 
     // Display object
   #ifdef ENABLE_DISPLAY
+    #define SCREEN_WIDTH 128 // OLED display width, in pixels
+    #define SCREEN_HEIGHT 64 // OLED display height, in pixels
     Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT);
   #endif
+  #define BITMAP_SIZE 40
 #endif
 
 typedef struct {
@@ -217,34 +222,34 @@ void loop()
   ColorClass col = bestMatchRGB(curretColor);
   switch(col) {
     case COL_GRAY:
-      drawBitmapWithText(epd_bitmap_gray,40,40, GRAY_STR);
+      drawBitmapWithText(epd_bitmap_gray, BITMAP_SIZE, BITMAP_SIZE, GRAY_STR);
       break;
     case COL_RED:
-      drawBitmapWithText(epd_bitmap_red,40,40, RED_STR);
+      drawBitmapWithText(epd_bitmap_red, BITMAP_SIZE, BITMAP_SIZE, RED_STR);
       break;
     case COL_YELLOW:
-      drawBitmapWithText(epd_bitmap_yellow, 40, 40, YELLOW_STR);
+      drawBitmapWithText(epd_bitmap_yellow, BITMAP_SIZE, BITMAP_SIZE, YELLOW_STR);
       break;
     case COL_BLUE:
-      drawBitmapWithText(epd_bitmap_blue,40,40, BLUE_STR);
+      drawBitmapWithText(epd_bitmap_blue, BITMAP_SIZE, BITMAP_SIZE, BLUE_STR);
       break;
     case COL_BROWN:
-      drawBitmapWithText(epd_bitmap_brown, 40, 40, BROWN_STR);
+      drawBitmapWithText(epd_bitmap_brown, BITMAP_SIZE, BITMAP_SIZE, BROWN_STR);
       break;
     case COL_ORANGE:
-      drawBitmapWithText(epd_bitmap_orange,40,40, ORANGESTR_STR);
+      drawBitmapWithText(epd_bitmap_orange, BITMAP_SIZE,BITMAP_SIZE, ORANGESTR_STR);
       break;
     case COL_PURPLE:
-      drawBitmapWithText(epd_bitmap_purple,40,40, PURPLE_STR);
+      drawBitmapWithText(epd_bitmap_purple, BITMAP_SIZE,BITMAP_SIZE, PURPLE_STR);
       break;
     case COL_PINK:
-      drawBitmapWithText(epd_bitmap_pink, 40, 40, PINK_STR);
+      drawBitmapWithText(epd_bitmap_pink, BITMAP_SIZE, BITMAP_SIZE, PINK_STR);
       break;
     case COL_AZURE:
-      drawBitmapWithText(epd_bitmap_azure,40,40, AZURE_STR);
+      drawBitmapWithText(epd_bitmap_azure, BITMAP_SIZE, BITMAP_SIZE, AZURE_STR);
       break;
     case COL_GREEN:
-      drawBitmapWithText(epd_bitmap_green, 40, 40, GREEN_STR);
+      drawBitmapWithText(epd_bitmap_green, BITMAP_SIZE, BITMAP_SIZE, GREEN_STR);
       break;
     default:
       drawBitmapWithText(nullptr, 0, 0, "?????");
@@ -262,13 +267,13 @@ void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_heig
       // --- PER OLED 0.42" su ESP32-C3/U8G2 ---
       u8g2.clearBuffer();
 
-      // // Bitmap centrata nell'area visibile con offset
-      // int x_bmp = X_OFFSET/2 + (OLED_WIDTH  - bmp_width) / 2;
-      // int y_bmp = Y_OFFSET/2 + 2;
-      // u8g2.drawXBMP(x_bmp, y_bmp, bmp_width, bmp_height, bitmap);
+      // Bitmap centrata nell'area visibile con offset
+      int x_bmp = X_OFFSET + (OLED_WIDTH  - bmp_width) / 2;
+      int y_bmp = Y_OFFSET;
+      u8g2.drawXBMP(x_bmp, y_bmp, bmp_width, bmp_height, bitmap);
 
       // Testo centrato sotto la bitmap
-      u8g2.setFont(u8g2_font_ncenB10_tr);
+      u8g2.setFont(u8g2_font_ncenB08_tr);
       int textWidth = u8g2.getStrWidth(message);
       int x_text = X_OFFSET + (OLED_WIDTH - textWidth) / 2;
       int y_text = Y_OFFSET + OLED_HEIGHT - 8 -1;
