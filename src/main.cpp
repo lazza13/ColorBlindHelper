@@ -49,6 +49,7 @@
   #ifdef TCS3200
     //#define CALIBRATION_MODE
   #endif
+  //#define TEST_SENSOR
 #endif
 
 //sanitiy check
@@ -105,6 +106,34 @@ typedef struct {
 } ColoReference;
 
 //Calibrate this value with your specific sensor
+#if defined(ESP32) && defined(COLORBLINDHELPER_OLED042)
+const ColoReference color_reference[] = {
+  {{50,   50,   50},  COL_GRAY},    // GRAY
+  {{155,  53,   41},  COL_RED},     // RED
+  {{147,  44,   44},  COL_RED},     // RED Dark
+  {{151,  53,   39},  COL_RED},     // RED Light
+  {{125,   80,  30},  COL_YELLOW},  // YELLOW
+  {{130,  76,  32},  COL_YELLOW},  // YELLOW Dark
+  {{118,  87,  30},  COL_YELLOW},  // YELLOW Light
+  {{72,   107,  55},  COL_GREEN},   // GREEN 
+  {{71,   97,  68},  COL_GREEN},   // GREEN Dark
+  {{72,   112,  47},  COL_GREEN},   // GREEN Light
+  {{61,   81,   93}, COL_BLUE},    // BLU dark
+  {{57,   82,   96}, COL_BLUE},    // BLU light
+  {{125,   73,   41},  COL_BROWN},   // BROWN
+  {{124,   70,   44},  COL_BROWN},   // BROWN dark
+  {{119,   79,   43},  COL_BROWN},   // BROWN light
+  {{144,  64,   34},  COL_ORANGE},  // ORANGE 
+  {{148,  59,   35},  COL_ORANGE},  // ORANGE dark
+  {{138,  70,   33},  COL_ORANGE},  // ORANGE light
+  {{74,   69,   94}, COL_PURPLE},  // PURPLE 
+  {{128,   54,   62}, COL_PURPLE},  // PURPLE light
+  {{118,   66,   56},  COL_PINK},    // PINK
+  {{114,   85,   59},  COL_PINK},    // PINK light
+  {{60,   88,   93}, COL_AZURE},    // AZURE 
+  {{52,   91,  97}, COL_AZURE}    // AZURE scuro
+};
+#else
 const ColoReference color_reference[] = {
   {{50,   50,   50},  COL_GRAY},    // GRAY
   {{112,  79,   71},  COL_RED},     // RED
@@ -131,6 +160,7 @@ const ColoReference color_reference[] = {
   {{41,   98,   117}, COL_AZURE},    // AZURE 
   {{38,   100,  119}, COL_AZURE}    // AZURE scuro
 };
+#endif
 
 
 // Value for calibration of the TCS3200. White surface and black surface
@@ -147,6 +177,7 @@ ColorClass bestMatchRGB(RGBColor currentColor);
 void rawSesnsorRead();
 RGBColor rgbSensorReadTCS3200();
 RGBColor readRGBColorTCS34725();
+void drawRGBText(unsigned char r, unsigned char g, unsigned char b);
 
 // Sensor object
 #if defined(ENABLE_SENSOR) && defined(TCS34725)
@@ -220,6 +251,11 @@ void loop()
 #endif
   //Find nearest colo meatch
   ColorClass col = bestMatchRGB(curretColor);
+#ifdef TEST_SENSOR
+  drawRGBText(curretColor.r,curretColor.g,curretColor.b);
+  delay(500);
+  return;
+#endif
   switch(col) {
     case COL_GRAY:
       drawBitmapWithText(epd_bitmap_gray, BITMAP_SIZE, BITMAP_SIZE, GRAY_STR);
@@ -258,6 +294,30 @@ void loop()
   delay(500);
 }
 
+// Write on mini display of esp32 the rgb data
+void drawRGBText(unsigned char r, unsigned char g, unsigned char b)
+{
+  u8g2.clearBuffer();
+  // Testo centrato sotto la bitmap
+  u8g2.setFont(u8g2_font_ncenB08_tr);
+  int x_text = X_OFFSET;
+  int y_text = Y_OFFSET + OLED_HEIGHT - (9*3);
+  char buffer[50];
+  sprintf(buffer,"r: %d",r);
+  u8g2.drawStr(x_text, y_text, buffer);
+
+  y_text = Y_OFFSET + OLED_HEIGHT - (9*2);
+  memset(buffer,0,50);
+  sprintf(buffer,"g: %d",g);
+  u8g2.drawStr(x_text, y_text, buffer);
+
+  y_text = Y_OFFSET + OLED_HEIGHT - (9);
+  memset(buffer,0,50);
+  sprintf(buffer,"b: %d",b);
+  u8g2.drawStr(x_text, y_text, buffer);
+
+  u8g2.sendBuffer();
+}
 
 // Bitmap and text draw function (2/3 Bitmap, 1/3 String) 
 void drawBitmapWithText(const unsigned char* bitmap, int bmp_width, int bmp_height, const char* message) 
@@ -378,9 +438,10 @@ void rawSesnsorRead()
   int blue = pulseIn(OUT, LOW);
 
    
+  
+#ifdef ENABLE_DISPLAY
   char buffer[200];
   sprintf(buffer,"r: %d, g: %d, b: %d",red,green,blue);
-#ifdef ENABLE_DISPLAY
   drawBitmapWithText(nullptr,0,0,buffer);
 #endif
   
